@@ -1,5 +1,5 @@
 # SYST 568 Project
-# Data Cleaning. Created by Chad Scott. Last updated 11/29/2020
+# Data Cleaning. Created by Chad Scott. Last updated 12/01/2020 by Jonathan Nelson.
   options(max.print = 10000)
 # Install Lahman package
 #  install.packages("Lahman")
@@ -24,7 +24,7 @@
   summary(Teams)  
   head(Teams)
 
-### Playoffs Variable ##########################################################################
+### Playoffs Variable ########################################################
 # Teams that made the playoffs 
   #2012 - Present (not inlcuding 2020) 10 teams made the playoffs
   Teams[yearID==2019,]
@@ -55,19 +55,76 @@
 
 # creating playoffs Lag variable
   setkey(Teams, teamID, yearID) # important for ordering
-  Teams[,playoff_prevyear:=(shift(Playoffs, 1)),by=teamID]  
-  Teams[teamID=='ATL',c(1:20,46:51)] 
+  Teams[,playoff_nextyear:=(shift(Playoffs, -1)),by=teamID]  
+  Teams[teamID=='ATL',c(1:20,46:50)] 
 
   
-#### Team Salaries ################################################################################
+### Team Salaries ############################################################
   data("Salaries")
   Salaries <- data.table(Salaries)
   str(Salaries)  
   head(Salaries)
+  Salaries$salary <- as.numeric(Salaries$salary)
   Salaries[,TeamSalary:=sum(salary), by = c("yearID","teamID")]
   Salaries <- unique(Salaries[,c("yearID","teamID","TeamSalary")])
+  Salaries[,TeamSalary:=TeamSalary/mean(TeamSalary), by = c("yearID")]
+  Salaries
+  
+# merge Salaries with Teams data
+  Teams_w_salary <- merge(Teams, Salaries,  by = c("yearID","teamID"), all.x = TRUE)
+# filter to only years with team salary data
+  Teams_w_salary <- Teams_w_salary[yearID>1984 & yearID<2017,]
+  
 
-# merge Salries with Teams data
-  Teams <- merge(Teams, Salaries,  by = c("yearID","teamID"), all.x = TRUE)
-  Teams 
+### Features for modeling ##########################################
+
+  ### Data without salary ### 
+  final_teams <- Teams[,c(6,15,17:24,28,33:36,50)]
+  final_teams$playoff_nextyear <- as.factor(final_teams$playoff_nextyear)
+  final_teams <- na.omit(final_teams, cols="playoff_nextyear")
+  # train-test split
+  set.seed(12345)
+  train_index <- sample(1:nrow(final_teams), 0.5 * nrow(final_teams))
+  test_index <- setdiff(1:nrow(final_teams), train_index)
+  train <- final_teams[train_index, -15]
+  test <- final_teams[test_index, -15]
+  
+  # logistic regression
+  logit.model <- step(glm(
+    playoff_nextyear~., data=train, family=binomial), direction='backward')
+  summary(logit.model)
+  
+  # test using split
+  logit.probs = predict(logit.model, test, type="response")
+  logit.pred = rep('N', nrow(test))
+  logit.pred[logit.probs >= 0.5] = 'Y'
+  logit.ConMatrix = table(logit.pred, test$playoff_nextyear)
+  logit.ConMatrix
+  (logit.ConMatrix[1, 1] + logit.ConMatrix[2, 2]) /  nrow(test)
+  # achieves an accuracy of 0.778, not great
+  
+### Data with salary ### 
+  final_teams_salary <- Teams_w_salary[,c(6,15,17:24,28,33:36,50,51)]
+  final_teams_salary$playoff_nextyear <- as.factor(final_teams_salary$playoff_nextyear)
+  final_teams_salary <- na.omit(final_teams_salary, cols="playoff_nextyear")
+  # train-test split
+  set.seed(12345)
+  train_index <- sample(1:nrow(final_teams_salary), 0.5 * nrow(final_teams_salary))
+  test_index <- setdiff(1:nrow(final_teams_salary), train_index)
+  train <- final_teams_salary[train_index, -15]
+  test <- final_teams_salary[test_index, -15]
+  
+  # logistic regression
+  logit.model <- step(glm(
+    playoff_nextyear~., data=train, family=binomial), direction='backward')
+  summary(logit.model)
+  
+  # test using split
+  logit.probs = predict(logit.model, test, type="response")
+  logit.pred = rep('N', nrow(test))
+  logit.pred[logit.probs >= 0.5] = 'Y'
+  logit.ConMatrix = table(logit.pred, test$playoff_nextyear)
+  logit.ConMatrix
+  (logit.ConMatrix[1, 1] + logit.ConMatrix[2, 2]) /  nrow(test)
+  # achieves an accuracy of 0.741, worse than without salary because less data
   
