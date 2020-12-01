@@ -78,68 +78,15 @@
 
 ### Features for modeling ##########################################
   
-  
-  ### Data without salary ### 
+### Data without salary ### 
   final_teams <- Teams[,c(6,15,17:24,28,33:36,50)]
-  final_teams$playoff_nextyear <- as.factor(final_teams$playoff_nextyear)
-  final_teams <- na.omit(final_teams, cols="playoff_nextyear")
-  # train-test split
-  set.seed(12345)
-  train_index <- sample(1:nrow(final_teams), 0.5 * nrow(final_teams))
-  test_index <- setdiff(1:nrow(final_teams), train_index)
-  train <- final_teams[train_index, -15]
-  test <- final_teams[test_index, -15]
-  
-  # benchmark accuracy with all predictions as "N"
-  pred = rep('N', nrow(final_teams))
-  ConMatrix = table(pred, final_teams$playoff_nextyear)
-  ConMatrix
-  (ConMatrix[1, 1]) /  nrow(final_teams)
-  # benchmark accuracy is 0.77
-  
-  # logistic regression
-  logit.model <- step(glm(
-    playoff_nextyear~., data=train, family=binomial), direction='backward')
-  summary(logit.model)
-  
-  # test using split
-  logit.probs = predict(logit.model, test, type="response")
-  logit.pred = rep('N', nrow(test))
-  logit.pred[logit.probs >= 0.5] = 'Y'
-  logit.ConMatrix = table(logit.pred, test$playoff_nextyear)
-  logit.ConMatrix
-  (logit.ConMatrix[1, 1] + logit.ConMatrix[2, 2]) /  nrow(test)
-  # achieves an accuracy of 0.778, not great, barely better than random
+
   
 ### Data with salary ### 
   final_teams_salary <- Teams_w_salary[,c(6,15,17:24,28,33:36,50,51)]
-  final_teams_salary$playoff_nextyear <- as.factor(final_teams_salary$playoff_nextyear)
-  final_teams_salary <- na.omit(final_teams_salary, cols="playoff_nextyear")
-  # train-test split
-  set.seed(12345)
-  train_index <- sample(1:nrow(final_teams_salary), 0.5 * nrow(final_teams_salary))
-  test_index <- setdiff(1:nrow(final_teams_salary), train_index)
-  train <- final_teams_salary[train_index, -15]
-  test <- final_teams_salary[test_index, -15]
-  
-  # benchmark accuracy with all predictions as "N"
-  pred = rep('N', nrow(final_teams_salary))
-  ConMatrix = table(pred, final_teams_salary$playoff_nextyear)
-  ConMatrix
-  (ConMatrix[1, 1]) /  nrow(final_teams_salary)
-  # benchmark accuracy is 0.751
-  
-  # logistic regression
-  logit.model <- step(glm(
-    playoff_nextyear~., data=train, family=binomial), direction='backward')
-  summary(logit.model)
-  
-  # test using split
-  logit.probs = predict(logit.model, test, type="response")
-  logit.pred = rep('N', nrow(test))
-  logit.pred[logit.probs >= 0.5] = 'Y'
-  logit.ConMatrix = table(logit.pred, test$playoff_nextyear)
-  logit.ConMatrix
-  (logit.ConMatrix[1, 1] + logit.ConMatrix[2, 2]) /  nrow(test)
-  # achieves an accuracy of 0.741, worse because less data, worse than random
-  
+
+
+# write out to csv
+  dir.create('data', showWarning=FALSE)
+  write.csv(train, file.path('data', 'final_teams.csv'))
+  write.csv(train, file.path('data', 'final_teams_salary.csv'))
