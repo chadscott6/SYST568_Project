@@ -77,7 +77,8 @@
   
 
 ### Features for modeling ##########################################
-
+  
+  
   ### Data without salary ### 
   final_teams <- Teams[,c(6,15,17:24,28,33:36,50)]
   final_teams$playoff_nextyear <- as.factor(final_teams$playoff_nextyear)
@@ -88,6 +89,13 @@
   test_index <- setdiff(1:nrow(final_teams), train_index)
   train <- final_teams[train_index, -15]
   test <- final_teams[test_index, -15]
+  
+  # benchmark accuracy with all predictions as "N"
+  pred = rep('N', nrow(final_teams))
+  ConMatrix = table(pred, final_teams$playoff_nextyear)
+  ConMatrix
+  (ConMatrix[1, 1]) /  nrow(final_teams)
+  # benchmark accuracy is 0.77
   
   # logistic regression
   logit.model <- step(glm(
@@ -101,7 +109,7 @@
   logit.ConMatrix = table(logit.pred, test$playoff_nextyear)
   logit.ConMatrix
   (logit.ConMatrix[1, 1] + logit.ConMatrix[2, 2]) /  nrow(test)
-  # achieves an accuracy of 0.778, not great
+  # achieves an accuracy of 0.778, not great, barely better than random
   
 ### Data with salary ### 
   final_teams_salary <- Teams_w_salary[,c(6,15,17:24,28,33:36,50,51)]
@@ -114,6 +122,13 @@
   train <- final_teams_salary[train_index, -15]
   test <- final_teams_salary[test_index, -15]
   
+  # benchmark accuracy with all predictions as "N"
+  pred = rep('N', nrow(final_teams_salary))
+  ConMatrix = table(pred, final_teams_salary$playoff_nextyear)
+  ConMatrix
+  (ConMatrix[1, 1]) /  nrow(final_teams_salary)
+  # benchmark accuracy is 0.751
+  
   # logistic regression
   logit.model <- step(glm(
     playoff_nextyear~., data=train, family=binomial), direction='backward')
@@ -126,5 +141,5 @@
   logit.ConMatrix = table(logit.pred, test$playoff_nextyear)
   logit.ConMatrix
   (logit.ConMatrix[1, 1] + logit.ConMatrix[2, 2]) /  nrow(test)
-  # achieves an accuracy of 0.741, worse than without salary because less data
+  # achieves an accuracy of 0.741, worse because less data, worse than random
   
