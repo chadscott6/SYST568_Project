@@ -1,12 +1,28 @@
 # Determine benchmark metrics, randomizing playoff teams
 
-# randomize two sets of playoff predictions
-set.seed(1)
-random_true = sample(c(rep(0,22*31),rep(1,8*31)))
-set.seed(2)
-random_pred = sample(c(rep(0,22*31),rep(1,8*31)))
+# get number of playoff teams per year
+playoffs_year <- final_teams_salary %>%
+  group_by(yearID) %>%
+  count(playoff_nextyear) %>%
+  filter(playoff_nextyear == 'Y')
+playoffs_year <- playoffs_year[,c(1,3)]
+# get random results
+total_true = vector()
+total_pred = vector()
+for (year in seq(1985,2018,1)) {
+  if (year == 1993 ){
+    next
+  }
+  n <- filter(playoffs_year, yearID==year)$n
+  set.seed(1)
+  random_true = sample(c(rep(0,30-n),rep(1,n)))
+  set.seed(2)
+  random_pred = sample(c(rep(0,30-n),rep(1,n)))
+  total_true = append(total_true, random_true)
+  total_pred = append(total_pred, random_pred)
+}
 # produce confusion matrix
-bm.ConMatrix = table(random_true, random_pred)
+bm.ConMatrix = table(total_true, total_pred)
 print(bm.ConMatrix)
 # calculate metrics
 bm.accuracy = (bm.ConMatrix[1, 1] + bm.ConMatrix[2, 2]) /  sum(bm.ConMatrix)
@@ -15,17 +31,5 @@ bm.recall = bm.ConMatrix[2, 2] / (bm.ConMatrix[2, 2] + bm.ConMatrix[2, 1])
 bm.f1score = 2*(bm.precision*bm.recall / (bm.precision+bm.recall))
 print(bm.accuracy)
 print(bm.f1score)
-# benchmark accuracy score is approx. 0.619
-# benchmark f1 score is approx. 0.286
-
-## Logit Scores ##
-logit.ConMatrix = table(test$playoff_pred, test$playoff_nextyear)
-logit.ConMatrix
-accuracy = (logit.ConMatrix[1, 1] + logit.ConMatrix[2, 2]) /  sum(logit.ConMatrix)
-precision = logit.ConMatrix[2, 2] / (logit.ConMatrix[2, 2] + logit.ConMatrix[1, 2])
-recall = logit.ConMatrix[2, 2] / (logit.ConMatrix[2, 2] + logit.ConMatrix[2, 1])
-f1score = 2*(precision*recall / (precision+recall))
-print(accuracy)
-print(f1score)
-# accuracy score of 0.696, improvement of 0.076 over random
-# f1 score of 0.451, improvement of 0.149 over random
+# benchmark accuracy score is approx. 0.634
+# benchmark f1 score is approx. 0.267
