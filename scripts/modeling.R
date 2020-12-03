@@ -76,9 +76,6 @@ record_outputs <- function(model_name, pred, model) {
 
 
 ####### Logit regression #########
-# logit.model <- step(glm(
-#   playoff_nextyear~.-yearID, data=train, family=binomial), direction='backward')
-# summary(logit.model)
 
 tc <- trainControl(method = "repeatedCV", number=10, repeats=1)
 logit.model <- train(playoff_nextyear~., data=train, method="LogitBoost", trControl=tc)
@@ -88,8 +85,6 @@ outputs[1,] <- record_outputs('Logit Regression', logit_pred, logit.model)
 
 
 ###### Random Forest ########
-# rf.model <- randomForest(playoff_nextyear~.-yearID,
-#                          data = train)
 
 tc <- trainControl(method = "repeatedCV", number=10, repeats=1)
 rf.model <- train(playoff_nextyear~., data=train, method="rf", trControl=tc)
@@ -99,21 +94,21 @@ outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
 
 # Visualization
 # Variable importance plot (Mean Decrease in Gini Index)
-# var_importance <- data_frame(variable=setdiff(colnames(train), "playoff_nextyear"),
-#                              importance=as.vector(importance(rf.model)))
-# var_importance <- arrange(var_importance, desc(importance))
-# var_importance$variable <- factor(var_importance$variable, levels=var_importance$variable)
-# 
-# p <- ggplot(var_importance, aes(x=variable, weig  ht=importance, fill=variable))
-# p <- p + geom_bar() + ggtitle("Variable Importance from Random Forest Fit")
-# p <- p + xlab("Statistic") + ylab("Variable Importance (Mean Decrease in Gini Index)")
-# p <- p + scale_fill_discrete(name="Variable Name")
-# p + theme(axis.text.x=element_blank(),
-#           axis.text.y=element_text(size=12),
-#           axis.title=element_text(size=16),
-#           plot.title=element_text(size=18),
-#           legend.title=element_text(size=16),
-#           legend.text=element_text(size=12))
+var_importance <- data_frame(variable=setdiff(colnames(train), "playoff_nextyear"),
+                             importance=as.vector(importance(rf.model)))
+var_importance <- arrange(var_importance, desc(importance))
+var_importance$variable <- factor(var_importance$variable, levels=var_importance$variable)
+
+p <- ggplot(var_importance, aes(x=variable, weight=importance, fill=variable))
+p <- p + geom_bar() + ggtitle("Variable Importance from Random Forest Fit")
+p <- p + xlab("Statistic") + ylab("Variable Importance (Mean Decrease in Gini Index)")
+p <- p + scale_fill_discrete(name="Variable Name")
+p + theme(axis.text.x=element_blank(),
+          axis.text.y=element_text(size=12),
+          axis.title=element_text(size=16),
+          plot.title=element_text(size=18),
+          legend.title=element_text(size=16),
+          legend.text=element_text(size=12))
 
 ###### XGB ########
 
