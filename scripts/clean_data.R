@@ -27,28 +27,34 @@
 ### Playoffs Variable ########################################################
 # Teams that made the playoffs 
   #2012 - Present (not inlcuding 2020) 10 teams made the playoffs
-  Teams[yearID==2019,]
-  Teams[yearID==2019 & (DivWin=="Y" | WCWin == "Y"),]
-  
-  Teams[yearID==2012 & (DivWin=="Y" | WCWin == "Y"),1:40]
-  # 1994 -2011 8 teams made the playoffs 1994 there was NO POST SEASON
-  Teams[yearID==2011,1:40]
-  Teams[yearID==2011 & (DivWin=="Y" | WCWin=="Y"),1:40]
-  
-  Teams[yearID==1995,1:40]
-  Teams[yearID==1995 & (DivWin=="Y" | WCWin=="Y"),1:40]
-  
-  Teams[yearID==1994,]
-  Teams[yearID==1994 & (DivWin=="Y" | WCWin=="Y"),1:40]
-  
-  # 1969 -1993 4 teams made the playoffs
-  Teams[yearID==1993,]
-  Teams[yearID==1993 & DivWin=="Y",]
-  
-  Teams[yearID==1969,1:40]
-  Teams[yearID==1969 & DivWin=="Y",1:40]
+  # Teams[yearID==2019,]
+  # Teams[yearID==2019 & (DivWin=="Y" | WCWin == "Y"),]
+  # 
+  # Teams[yearID==2012 & (DivWin=="Y" | WCWin == "Y"),1:40]
+  # # 1994 -2011 8 teams made the playoffs 1994 there was NO POST SEASON
+  # Teams[yearID==2011,1:40]
+  # Teams[yearID==2011 & (DivWin=="Y" | WCWin=="Y"),1:40]
+  # 
+  # Teams[yearID==1995,1:40]
+  # Teams[yearID==1995 & (DivWin=="Y" | WCWin=="Y"),1:40]
+  # 
+  # Teams[yearID==1994,]
+  # Teams[yearID==1994 & (DivWin=="Y" | WCWin=="Y"),1:40]
+  # 
+  # # 1969 -1993 4 teams made the playoffs
+  # Teams[yearID==1993,]
+  # Teams[yearID==1993 & DivWin=="Y",]
+  # 
+  # Teams[yearID==1969,1:40]
+  # Teams[yearID==1969 & DivWin=="Y",1:40]
   
 # Creating playoffs variable
+  # creating DivWin and WCWin for 1994 season
+  Teams$lg_div <-paste(Teams$lgID,Teams$divID)
+  Teams$DivWin[Teams[yearID==1994,.I[W == max(W)],by=lg_div]$V1] <- 'Y'
+  Teams$WCWin[Teams[yearID==1994 & is.na(DivWin),.I[W == max(W)],by=lgID]$V1] <- 'Y'
+  Teams[yearID==1994,]
+  
   Teams$Playoffs <- "N"
   Teams[yearID>1993 & (DivWin=="Y" | WCWin=="Y"), Playoffs:= "Y"]
   Teams[yearID<1994 & DivWin=="Y", Playoffs:="Y"]
@@ -78,9 +84,7 @@
 # merge Salaries with Teams data
   Teams_w_salary <- merge(Teams, Salaries,  by = c("yearID","teamID"), all.x = TRUE)
 # filter to only years with team salary data
-  Teams_w_salary <- Teams_w_salary[yearID>1984 & yearID!=1993,]
-  
-
+  Teams_w_salary <- Teams_w_salary[yearID>1984,]
   
 
 ### Features for modeling ##########################################
