@@ -97,7 +97,7 @@
 
 ### Data with salary ### 
 
-  final_teams_salary <- Teams_w_salary[,c(1,6,52:77,50:51)]
+  final_teams_salary <- Teams_w_salary[,c(1,3:6,52:77,50:51)]
 
 # write out to csv
   dir.create('data', showWarning=FALSE)
