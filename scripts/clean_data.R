@@ -98,6 +98,10 @@
 ### Data with salary ### 
   ## Need to Change this
   final_teams_salary <- Teams_w_salary[,c(1,6,15:28,30:39,50,51)]
+  
+  # suggested!!
+  #final_teams_salary <- Teams_w_salary[,c(1,6,52:77,50:51)]
+  
 
 
 # write out to csv
