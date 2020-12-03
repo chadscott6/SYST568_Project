@@ -79,16 +79,14 @@
 ### Features for modeling ##########################################
   
 ### Data without salary ### 
-  final_teams <- Teams[,c(6,15,17:24,28,33:36,50)]
+  final_teams <- Teams[,c(1,6,15,17:24,28,33:36,50)]
 
   
 ### Data with salary ### 
-  final_teams_salary <- Teams_w_salary[,c(6,15,17:24,28,33:36,50,51)]
+  final_teams_salary <- Teams_w_salary[,c(1,6,15,17:24,28,33:36,50,51)]
 
 
 # write out to csv
   dir.create('data', showWarning=FALSE)
-  #write.csv(train, file.path('data', 'final_teams.csv'))
-  #write.csv(train, file.path('data', 'final_teams_salary.csv'))
- write.csv(final_teams, file.path('data', 'final_teams.csv'))
+  write.csv(final_teams, file.path('data', 'final_teams.csv'))
   write.csv(final_teams_salary, file.path('data', 'final_teams_salary.csv'))

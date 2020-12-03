@@ -1,12 +1,12 @@
 # SYST 568 Project
 # Model Exploration. Last updated 12/1/2020
 
-
 library(ggplot2)
 library(ROCR)
 library(randomForest)
 library(caret)
 library(InformationValue)
+library(dplyr)
 
 final_teams_salary = read.csv('./data/final_teams_salary.csv')
 
@@ -14,18 +14,30 @@ factor_cols = c('playoff_nextyear')
 final_teams_salary[factor_cols] <- lapply(final_teams_salary[factor_cols] , factor)
 final_teams_salary <- na.omit(final_teams_salary, cols="playoff_nextyear")
 
-# train-test split
+# train-test split by yearID
 set.seed(12345)
-train_index <- sample(1:nrow(final_teams_salary), 0.5 * nrow(final_teams_salary))
-test_index <- setdiff(1:nrow(final_teams_salary), train_index)
-train <- final_teams_salary[train_index, -15]
-test <- final_teams_salary[test_index, -15]
+years <- unique(final_teams_salary$yearID)
+train_years <- sample(years, 0.5*length(years))
+test_years <- setdiff(years, train_years)
+train <- subset(final_teams_salary, yearID %in% train_years)
+test <- subset(final_teams_salary, yearID %in% test_years)
 
 outputs <- data.frame(model_name=character(),
                  accuracy=numeric(),
                  sensitivity=numeric(),
                  mcr=numeric(),
                  auc=numeric())
+
+get_top8_predictions <- function(data, model) {
+  data$playoff_prob = predict(logit.model, data, type="response")
+  playoff_teams <- data %>%
+    group_by(yearID) %>%
+    slice_max(playoff_prob, n = 8, with_ties = FALSE)
+  playoff_teams$playoff_pred = 'Y'
+  pred <- merge(test, playoff_teams, all.x=TRUE)
+  pred$playoff_pred[is.na(pred$playoff_pred)] <- 'N'
+  return(pred$playoff_pred)
+}
 
 record_outputs <- function(model_name, pred, model) {
   scores <- prediction(predictions=pred, labels=test$playoff_nextyear)
@@ -53,39 +65,21 @@ record_outputs <- function(model_name, pred, model) {
 }
 
 
-####### Benchmarks ########
-# benchmark accuracy with all predictions as "N"
-
-pred = rep('N', nrow(final_teams_salary))
-ConMatrix = table(pred, final_teams_salary$playoff_nextyear)
-ConMatrix
-(ConMatrix[1, 1]) /  nrow(final_teams_salary)
-# benchmark accuracy is 0.751
-
-
 ####### Logit regression #########
 logit.model <- step(glm(
-  playoff_nextyear~., data=train, family=binomial), direction='backward')
+  playoff_nextyear~.-yearID, data=train, family=binomial), direction='backward')
 summary(logit.model)
 
-# test using split
-logit.probs = predict(logit.model, test, type="response")
-logit.pred = rep('N', nrow(test))
-logit.pred[logit.probs >= 0.5] = 'Y'
-logit.ConMatrix = table(logit.pred, test$playoff_nextyear)
-logit.ConMatrix
-(logit.ConMatrix[1, 1] + logit.ConMatrix[2, 2]) /  nrow(test)
-
 #TODO: Generalize, currently need to specify row numbers for each addition
-pred <- plogis(predict(logit.model, test))
-outputs[1,] <- record_outputs('Logit Regression', pred, logit.model)
+logit_pred <- get_top8_predictions(test, logit.model)
+outputs[1,] <- record_outputs('Logit Regression', logit_pred, logit.model)
 
 
 ###### Random Forest ########
-rf.model <- randomForest(playoff_nextyear~.,
+rf.model <- randomForest(playoff_nextyear~.-yearID,
                          data = train)
 
-rf_pred <- predict(rf.model, test, type='prob')[,2]
+rf_pred <- get_top8_predictions(test, rf.model)
 outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
 
 
@@ -94,7 +88,7 @@ outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
 tc <- trainControl(method = "repeatedCV", number=15, repeats=1)
 xgb.model <- train(playoff_nextyear~., data=train, method="xgbTree", trControl=tc)
 
-xgb_pred <- predict(xgb.model, test, type='prob')[,2]
+xgb_pred <- get_top8_predictions(test, xgb.model)
 outputs[3,] <- record_outputs('XGB', xgb_pred, rf.model)
 
 print(outputs)
