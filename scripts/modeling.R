@@ -23,7 +23,7 @@ playoffs_year <- playoffs_year[,c(1,3)]
 # train-test split by yearID
 set.seed(12345)
 years <- unique(final_teams_salary$yearID)
-train_years <- sample(years, 0.5*length(years))
+train_years <- sample(years, 0.8*length(years))
 test_years <- setdiff(years, train_years)
 train <- subset(final_teams_salary, yearID %in% train_years)
 test <- subset(final_teams_salary, yearID %in% test_years)
@@ -99,21 +99,21 @@ outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
 
 # Visualization
 # Variable importance plot (Mean Decrease in Gini Index)
-var_importance <- data_frame(variable=setdiff(colnames(train), "playoff_nextyear"),
-                             importance=as.vector(importance(rf.model)))
-var_importance <- arrange(var_importance, desc(importance))
-var_importance$variable <- factor(var_importance$variable, levels=var_importance$variable)
-
-p <- ggplot(var_importance, aes(x=variable, weight=importance, fill=variable))
-p <- p + geom_bar() + ggtitle("Variable Importance from Random Forest Fit")
-p <- p + xlab("Statistic") + ylab("Variable Importance (Mean Decrease in Gini Index)")
-p <- p + scale_fill_discrete(name="Variable Name")
-p + theme(axis.text.x=element_blank(),
-          axis.text.y=element_text(size=12),
-          axis.title=element_text(size=16),
-          plot.title=element_text(size=18),
-          legend.title=element_text(size=16),
-          legend.text=element_text(size=12))
+# var_importance <- data_frame(variable=setdiff(colnames(train), "playoff_nextyear"),
+#                              importance=as.vector(importance(rf.model)))
+# var_importance <- arrange(var_importance, desc(importance))
+# var_importance$variable <- factor(var_importance$variable, levels=var_importance$variable)
+# 
+# p <- ggplot(var_importance, aes(x=variable, weig  ht=importance, fill=variable))
+# p <- p + geom_bar() + ggtitle("Variable Importance from Random Forest Fit")
+# p <- p + xlab("Statistic") + ylab("Variable Importance (Mean Decrease in Gini Index)")
+# p <- p + scale_fill_discrete(name="Variable Name")
+# p + theme(axis.text.x=element_blank(),
+#           axis.text.y=element_text(size=12),
+#           axis.title=element_text(size=16),
+#           plot.title=element_text(size=18),
+#           legend.title=element_text(size=16),
+#           legend.text=element_text(size=12))
 
 ###### XGB ########
 
