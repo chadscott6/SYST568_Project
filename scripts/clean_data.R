@@ -86,14 +86,17 @@
 # filter to only years with team salary data
   Teams_w_salary <- Teams_w_salary[yearID>1984,]
   
+### Standardizing STATS by games played ##########################################
+  # names(Teams_w_salary)[c(15:28,30:39)] # list of columns that are being standardized
+  setDT(Teams_w_salary)[, paste0(names(Teams_w_salary)[c(15:28,30:39)],"_G") :=
+                           lapply(.SD, '/', Teams_w_salary$G), .SDcols = c(15:28,30:39)]
+  Teams_w_salary
+  
 
 ### Features for modeling ##########################################
-  
-### Data without salary ### 
-  final_teams <- Teams[,c(1,6,15,17:24,28,33:36,50)]
 
-  
 ### Data with salary ### 
+  ## Need to Change this
   final_teams_salary <- Teams_w_salary[,c(1,6,15,17:24,28,33:36,50,51)]
 
 
