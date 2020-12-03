@@ -5,7 +5,6 @@ library(ggplot2)
 library(ROCR)
 library(randomForest)
 library(caret)
-library(InformationValue)
 library(dplyr)
 
 final_teams_salary = read.csv('./data/final_teams_salary.csv')
@@ -24,12 +23,12 @@ test <- subset(final_teams_salary, yearID %in% test_years)
 
 outputs <- data.frame(model_name=character(),
                  accuracy=numeric(),
-                 sensitivity=numeric(),
-                 mcr=numeric(),
-                 auc=numeric())
+                 precision=numeric(),
+                 recall=numeric(),
+                 f1score=numeric())
 
 get_top8_predictions <- function(data, model) {
-  data$playoff_prob = predict(logit.model, data, type="response")
+  data$playoff_prob = predict(model, data, type="response")
   playoff_teams <- data %>%
     group_by(yearID) %>%
     slice_max(playoff_prob, n = 8, with_ties = FALSE)
@@ -40,28 +39,15 @@ get_top8_predictions <- function(data, model) {
 }
 
 record_outputs <- function(model_name, pred, model) {
-  scores <- prediction(predictions=pred, labels=test$playoff_nextyear)
-  perf <- performance(scores, "tpr", "fpr")
+
+  ConMatrix = table(test$playoff_nextyear, pred)
+  # calculate metrics
+  accuracy = (ConMatrix[1, 1] + ConMatrix[2, 2]) /  sum(ConMatrix)
+  precision = ConMatrix[2, 2] / (ConMatrix[2, 2] + ConMatrix[1, 2])
+  recall = ConMatrix[2, 2] / (ConMatrix[2, 2] + ConMatrix[2, 1])
+  f1score = 2*(precision*recall / (precision+recall))
   
-  #PLOT ROC CURVE
-  plot(perf,
-       main="ROC Curves",
-       xlab="1 - Specificity: False Positive Rate",
-       ylab="Sensitivity: True Positive Rate",
-       col="darkblue",  lwd = 3)
-  abline(0,1, lty = 300, col = "green",  lwd = 3)
-  grid(col="aquamarine")
-  
-  ## Performance Metrics
-  cm = confusionMatrix(test$playoff_nextyear, pred)
-  accuracy = (cm[2,2] + cm[1,1])/nrow(test)
-  sensitivity = cm[2,2] / (cm[2,2] + cm[2,1])
-  mcr = (cm[2,1] + cm[1,2]) / nrow(test)
-  
-  # AREA UNDER THE CURVE
-  auc <- performance(scores, "auc")
-  auc <- as.numeric(auc@y.values)  ##AUC Value
-  return(list(model_name, accuracy, sensitivity, mcr, auc))
+  return(list(model_name, accuracy, precision, recall, f1score))
 }
 
 
@@ -85,7 +71,7 @@ outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
 
 ###### XGB ########
 
-tc <- trainControl(method = "repeatedCV", number=15, repeats=1)
+tc <- trainControl(method = "repeatedCV", number=2, repeats=1)
 xgb.model <- train(playoff_nextyear~., data=train, method="xgbTree", trControl=tc)
 
 xgb_pred <- get_top8_predictions(test, xgb.model)
