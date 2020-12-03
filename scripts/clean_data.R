@@ -73,7 +73,7 @@
 # merge Salaries with Teams data
   Teams_w_salary <- merge(Teams, Salaries,  by = c("yearID","teamID"), all.x = TRUE)
 # filter to only years with team salary data
-  Teams_w_salary <- Teams_w_salary[yearID>1984 & yearID<2017,]
+  Teams_w_salary <- Teams_w_salary[yearID>1984 & yearID<2017 & yearID!=1993,]
   
 
 ### Features for modeling ##########################################

@@ -8,7 +8,7 @@ library(caret)
 library(InformationValue)
 library(dplyr)
 
-final_teams_salary = read.csv('./data/final_teams_salary.csv')
+final_teams_salary = read.csv('./data/final_teams_salary.csv')[,-1]
 
 factor_cols = c('playoff_nextyear')
 final_teams_salary[factor_cols] <- lapply(final_teams_salary[factor_cols] , factor)
@@ -28,15 +28,32 @@ outputs <- data.frame(model_name=character(),
                  mcr=numeric(),
                  auc=numeric())
 
-get_top8_predictions <- function(data, model) {
+# NOTE: this does not work yet
+get_division_predictions <- function(data, model) {
   data$playoff_prob = predict(logit.model, data, type="response")
   playoff_teams <- data %>%
-    group_by(yearID) %>%
-    slice_max(playoff_prob, n = 8, with_ties = FALSE)
+    group_by(yearID,lgID,divID) %>%
+    slice_max(playoff_prob, n = 1, with_ties = FALSE)
   playoff_teams$playoff_pred = 'Y'
   pred <- merge(test, playoff_teams, all.x=TRUE)
   pred$playoff_pred[is.na(pred$playoff_pred)] <- 'N'
   return(pred$playoff_pred)
+}
+
+get_top_predictions <- function(data, model) {
+  total_pred = vector()
+  for (year in unique(data$yearID)) {
+    year_data = filter(data,  yearID==year)
+    year_data$playoff_prob = predict(logit.model, year_data, type="response")
+    playoffs_n <- filter(playoffs_year, yearID==year)$n
+    playoff_teams <- year_data %>%
+      slice_max(playoff_prob, n = playoffs_n, with_ties = FALSE)
+    playoff_teams$playoff_pred = 'Y'
+    pred <- merge(year_data, playoff_teams, all.x=TRUE)
+    pred$playoff_pred[is.na(pred$playoff_pred)] <- 'N'
+    total_pred = append(total_pred, pred$playoff_pred)
+  }
+  return(total_pred)
 }
 
 record_outputs <- function(model_name, pred, model) {
@@ -67,19 +84,20 @@ record_outputs <- function(model_name, pred, model) {
 
 ####### Logit regression #########
 logit.model <- step(glm(
-  playoff_nextyear~.-yearID, data=train, family=binomial), direction='backward')
+  playoff_nextyear~., data=train, family=binomial), direction='backward')
 summary(logit.model)
 
 #TODO: Generalize, currently need to specify row numbers for each addition
-logit_pred <- get_top8_predictions(test, logit.model)
+logit_top8_pred <- get_top_predictions(test, logit.model)
 outputs[1,] <- record_outputs('Logit Regression', logit_pred, logit.model)
 
 
 ###### Random Forest ########
 rf.model <- randomForest(playoff_nextyear~.-yearID,
-                         data = train)
+                         data = train, importance=TRUE)
+summary(rf.model)
 
-rf_pred <- get_top8_predictions(test, rf.model)
+rf_pred <- get_top_predictions(test, rf.model)
 outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
 
 
@@ -88,7 +106,7 @@ outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
 tc <- trainControl(method = "repeatedCV", number=15, repeats=1)
 xgb.model <- train(playoff_nextyear~., data=train, method="xgbTree", trControl=tc)
 
-xgb_pred <- get_top8_predictions(test, xgb.model)
+xgb_pred <- get_top_predictions(test, xgb.model)
 outputs[3,] <- record_outputs('XGB', xgb_pred, rf.model)
 
 print(outputs)
