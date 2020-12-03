@@ -50,7 +50,7 @@ get_top_predictions <- function(data, model) {
   total_pred = vector()
   for (year in unique(data$yearID)) {
     year_data = filter(data,  yearID==year)
-    year_data$playoff_prob = predict(logit.model, year_data, type="response")
+    year_data$playoff_prob = predict(model, year_data, type="prob")[,2]
     playoffs_n <- filter(playoffs_year, yearID==year)$n
     playoff_teams <- year_data %>%
       slice_max(playoff_prob, n = playoffs_n, with_ties = FALSE)
@@ -80,7 +80,7 @@ record_outputs <- function(model_name, pred, model) {
 #   playoff_nextyear~.-yearID, data=train, family=binomial), direction='backward')
 # summary(logit.model)
 
-tc <- trainControl(method = "repeatedCV", number=2, repeats=1)
+tc <- trainControl(method = "repeatedCV", number=10, repeats=1)
 logit.model <- train(playoff_nextyear~., data=train, method="LogitBoost", trControl=tc)
 
 logit_pred <- get_top_predictions(test, logit.model)
@@ -91,33 +91,33 @@ outputs[1,] <- record_outputs('Logit Regression', logit_pred, logit.model)
 # rf.model <- randomForest(playoff_nextyear~.-yearID,
 #                          data = train)
 
-tc <- trainControl(method = "repeatedCV", number=2, repeats=1)
+tc <- trainControl(method = "repeatedCV", number=10, repeats=1)
 rf.model <- train(playoff_nextyear~., data=train, method="rf", trControl=tc)
 
 rf_pred <- get_top_predictions(test, rf.model)
 outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
 
 # Visualization
-    # Variable importance plot (Mean Decrease in Gini Index)
-    var_importance <- data_frame(variable=setdiff(colnames(train), "playoff_nextyear"),
-                                 importance=as.vector(importance(rf.model)))
-    var_importance <- arrange(var_importance, desc(importance))
-    var_importance$variable <- factor(var_importance$variable, levels=var_importance$variable)
+# Variable importance plot (Mean Decrease in Gini Index)
+var_importance <- data_frame(variable=setdiff(colnames(train), "playoff_nextyear"),
+                             importance=as.vector(importance(rf.model)))
+var_importance <- arrange(var_importance, desc(importance))
+var_importance$variable <- factor(var_importance$variable, levels=var_importance$variable)
 
-    p <- ggplot(var_importance, aes(x=variable, weight=importance, fill=variable))
-    p <- p + geom_bar() + ggtitle("Variable Importance from Random Forest Fit")
-    p <- p + xlab("Statistic") + ylab("Variable Importance (Mean Decrease in Gini Index)")
-    p <- p + scale_fill_discrete(name="Variable Name")
-    p + theme(axis.text.x=element_blank(),
-              axis.text.y=element_text(size=12),
-              axis.title=element_text(size=16),
-              plot.title=element_text(size=18),
-              legend.title=element_text(size=16),
-              legend.text=element_text(size=12))
+p <- ggplot(var_importance, aes(x=variable, weight=importance, fill=variable))
+p <- p + geom_bar() + ggtitle("Variable Importance from Random Forest Fit")
+p <- p + xlab("Statistic") + ylab("Variable Importance (Mean Decrease in Gini Index)")
+p <- p + scale_fill_discrete(name="Variable Name")
+p + theme(axis.text.x=element_blank(),
+          axis.text.y=element_text(size=12),
+          axis.title=element_text(size=16),
+          plot.title=element_text(size=18),
+          legend.title=element_text(size=16),
+          legend.text=element_text(size=12))
 
 ###### XGB ########
 
-tc <- trainControl(method = "repeatedCV", number=2, repeats=1)
+tc <- trainControl(method = "repeatedCV", number=10, repeats=1)
 xgb.model <- train(playoff_nextyear~., data=train, method="xgbTree", trControl=tc)
 
 xgb_pred <- get_top_predictions(test, xgb.model)
