@@ -71,9 +71,9 @@
   Salaries
   
 # add 2017 - 2019 salaries
-  Sal_17_19 <- read.csv('../data/input/salaries2017-19.csv')
-  setnames(Sal_17_19, "salary","TeamSalary")
-  Salaries <- rbind(Salaries,Sal_17_19)
+  # Sal_17_19 <- read.csv('../data/input/salaries2017-19.csv')
+  # setnames(Sal_17_19, "salary","TeamSalary")
+  # Salaries <- rbind(Salaries,Sal_17_19)
   
 # merge Salaries with Teams data
   Teams_w_salary <- merge(Teams, Salaries,  by = c("yearID","teamID"), all.x = TRUE)
