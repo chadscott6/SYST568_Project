@@ -13,6 +13,13 @@ factor_cols = c('playoff_nextyear')
 final_teams_salary[factor_cols] <- lapply(final_teams_salary[factor_cols] , factor)
 final_teams_salary <- na.omit(final_teams_salary, cols="playoff_nextyear")
 
+# get number of playoff teams per year
+playoffs_year <- final_teams_salary %>%
+  group_by(yearID) %>%
+  count(playoff_nextyear) %>%
+  filter(playoff_nextyear == 'Y')
+playoffs_year <- playoffs_year[,c(1,3)]
+
 # train-test split by yearID
 set.seed(12345)
 years <- unique(final_teams_salary$yearID)
