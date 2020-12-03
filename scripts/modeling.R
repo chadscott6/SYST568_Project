@@ -74,6 +74,23 @@ rf_pred <- get_top8_predictions(test, rf.model)
 outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
 
 
+# Variable importance plot (Mean Decrease in Gini Index)
+var_importance <- data_frame(variable=setdiff(colnames(train), "playoff_nextyear"),
+                             importance=as.vector(importance(rf.model)))
+var_importance <- arrange(var_importance, desc(importance))
+var_importance$variable <- factor(var_importance$variable, levels=var_importance$variable)
+
+p <- ggplot(var_importance, aes(x=variable, weight=importance, fill=variable))
+p <- p + geom_bar() + ggtitle("Variable Importance from Random Forest Fit")
+p <- p + xlab("Statistic") + ylab("Variable Importance (Mean Decrease in Gini Index)")
+p <- p + scale_fill_discrete(name="Variable Name")
+p + theme(axis.text.x=element_blank(),
+          axis.text.y=element_text(size=12),
+          axis.title=element_text(size=16),
+          plot.title=element_text(size=18),
+          legend.title=element_text(size=16),
+          legend.text=element_text(size=12))
+
 ###### XGB ########
 
 tc <- trainControl(method = "repeatedCV", number=2, repeats=1)
@@ -83,3 +100,8 @@ xgb_pred <- get_top8_predictions(test, xgb.model)
 outputs[3,] <- record_outputs('XGB', xgb_pred, rf.model)
 
 print(outputs)
+
+
+
+
+
