@@ -161,3 +161,6 @@ p + theme(axis.text.x=element_text(size=12, angle=90, vjust=0.5, hjust=1),
           axis.text.y=element_text(size=12),
           axis.title=element_text(size=16),
           plot.title=element_text(size=18))
+
+final %>% filter(yearID == max(test$yearID)) %>% select(yearID, franchID, playoff_nextyear, pred)
+print(final)
