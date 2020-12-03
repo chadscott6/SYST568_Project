@@ -2,9 +2,11 @@
 # Model Exploration. Last updated 12/1/2020
 
 
-library(InformationValue)
 library(ggplot2)
 library(ROCR)
+library(randomForest)
+library(caret)
+library(InformationValue)
 
 final_teams_salary = read.csv('./data/final_teams_salary.csv')
 
@@ -25,9 +27,7 @@ outputs <- data.frame(model_name=character(),
                  mcr=numeric(),
                  auc=numeric())
 
-record_outputs <- function(model_name, model) {
-  #TODO: Generalize
-  pred <- plogis(predict(model, test))
+record_outputs <- function(model_name, pred, model) {
   scores <- prediction(predictions=pred, labels=test$playoff_nextyear)
   perf <- performance(scores, "tpr", "fpr")
   
@@ -53,34 +53,7 @@ record_outputs <- function(model_name, model) {
 }
 
 
-#### Logistic Regression - without salary ##### 
-## NOTE - currently not implemeneted, uses different train / test data
-# 
-# final_teams$playoff_nextyear <- as.factor(final_teams$playoff_nextyear)
-# final_teams <- na.omit(final_teams, cols="playoff_nextyear")
-# 
-# # benchmark accuracy with all predictions as "N"
-# pred = rep('N', nrow(final_teams))
-# ConMatrix = table(pred, final_teams$playoff_nextyear)
-# ConMatrix
-# (ConMatrix[1, 1]) /  nrow(final_teams)
-# # benchmark accuracy is 0.77
-# 
-# # logistic regression
-# logit.model <- step(glm(
-#   playoff_nextyear~., data=train, family=binomial), direction='backward')
-# summary(logit.model)
-# 
-# # test using split
-# logit.probs = predict(logit.model, test, type="response")
-# logit.pred = rep('N', nrow(test))
-# logit.pred[logit.probs >= 0.5] = 'Y'
-# logit.ConMatrix = table(logit.pred, test$playoff_nextyear)
-# logit.ConMatrix
-# (logit.ConMatrix[1, 1] + logit.ConMatrix[2, 2]) /  nrow(test)
-# # achieves an accuracy of 0.778, not great, barely better than random
-
-####### Logit regression - with salary #########
+####### Benchmarks ########
 # benchmark accuracy with all predictions as "N"
 
 pred = rep('N', nrow(final_teams_salary))
@@ -89,7 +62,8 @@ ConMatrix
 (ConMatrix[1, 1]) /  nrow(final_teams_salary)
 # benchmark accuracy is 0.751
 
-# logistic regression
+
+####### Logit regression #########
 logit.model <- step(glm(
   playoff_nextyear~., data=train, family=binomial), direction='backward')
 summary(logit.model)
@@ -103,7 +77,24 @@ logit.ConMatrix
 (logit.ConMatrix[1, 1] + logit.ConMatrix[2, 2]) /  nrow(test)
 
 #TODO: Generalize, currently need to specify row numbers for each addition
-outputs[1,] <- record_outputs('Logit Regression', logit.model)
+pred <- plogis(predict(logit.model, test))
+outputs[1,] <- record_outputs('Logit Regression', pred, logit.model)
+
+
+###### Random Forest ########
+rf.model <- randomForest(playoff_nextyear~.,
+                         data = train)
+
+rf_pred <- predict(rf.model, test, type='prob')[,2]
+outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
+
+
+###### XGB ########
+
+tc <- trainControl(method = "repeatedCV", number=15, repeats=1)
+xgb.model <- train(playoff_nextyear~., data=train, method="xgbTree", trControl=tc)
+
+xgb_pred <- predict(xgb.model, test, type='prob')[,2]
+outputs[3,] <- record_outputs('XGB', xgb_pred, rf.model)
 
 print(outputs)
-# achieves an accuracy of 0.741, worse because less data, worse than random
