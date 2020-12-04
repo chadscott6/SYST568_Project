@@ -109,6 +109,7 @@ rf.model <- train(playoff_nextyear~.- franchID - divID - lgID, data=train, metho
 rf_pred <- get_div_predictions(test, rf.model)
 outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
 
+
 ###### XGB ########
 
 tc <- trainControl(method = "repeatedCV", number=10, repeats=1)
@@ -143,8 +144,23 @@ var_importance <- arrange(var_importance, desc(Overall))
 
 p <- ggplot(var_importance, aes(x=variable, weight=Overall))
 p <- p + geom_bar() + ggtitle("Variable Importance from Random Forest Fit")
-p <- p + xlab("Variable") + ylab("Importance (Mean Decrease in Gini Index)")
+p <- p + xlab("Variable") + ylab("Importance (average increase in accuracy)")
 p + theme(axis.text.x=element_text(size=12, angle=90, vjust=0.5, hjust=1),
           axis.text.y=element_text(size=12),
           axis.title=element_text(size=16),
           plot.title=element_text(size=18))
+
+var_importance <- varImp(xgb.model, scale=FALSE)$importance
+var_importance <- setDT(var_importance, keep.rownames='variable')
+var_importance <- arrange(var_importance, desc(Overall))
+
+p <- ggplot(var_importance, aes(x=variable, weight=Overall))
+p <- p + geom_bar() + ggtitle("Variable Importance from XGB Fit")
+p <- p + xlab("Variable") + ylab("Importance (average increase in accuracy)")
+p + theme(axis.text.x=element_text(size=12, angle=90, vjust=0.5, hjust=1),
+          axis.text.y=element_text(size=12),
+          axis.title=element_text(size=16),
+          plot.title=element_text(size=18))
+
+final %>% filter(yearID == max(test$yearID)) %>% select(yearID, franchID, playoff_nextyear, pred)
+print(final)
