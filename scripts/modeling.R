@@ -94,7 +94,7 @@ record_outputs <- function(model_name, pred, model) {
 
 tc <- trainControl(method = "repeatedCV", number=10, repeats=2)
 tg <- expand.grid(nIter=c(1,2,5,10))
-logit.model <- train(playoff_nextyear~.-franchID, data=train, method="LogitBoost", trControl=tc, tuneGrid=tg)
+logit.model <- train(playoff_nextyear~. - franchID - divID - lgID, data=train, method="LogitBoost", trControl=tc, tuneGrid=tg)
 
 logit_pred <- get_div_predictions(test, logit.model)
 outputs[1,] <- record_outputs('Logit Regression', logit_pred, logit.model)
@@ -104,9 +104,9 @@ outputs[1,] <- record_outputs('Logit Regression', logit_pred, logit.model)
 
 tc <- trainControl(method = "repeatedCV", number=10, repeats=2)
 tg <- expand.grid(mtry=c(15,20,25,30))
-rf.model <- train(playoff_nextyear~.-franchID, data=train, method="rf", trControl=tc, tuneGrid=tg)
+rf.model <- train(playoff_nextyear~.- franchID - divID - lgID, data=train, method="rf", trControl=tc, tuneGrid=tg)
 
-rf_pred <- get_top_predictions(test, rf.model)
+rf_pred <- get_div_predictions(test, rf.model)
 outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
 
 
@@ -120,9 +120,9 @@ tg <- expand.grid(nrounds=c(50,100, 150),
                   colsample_bytree=c(0.6,0.8),
                   min_child_weight=c(1),
                   subsample=c(.5,.75,1))
-xgb.model <- train(playoff_nextyear~.-franchID, data=train, method="xgbTree", trControl=tc, tuneGrid=tg)
+xgb.model <- train(playoff_nextyear~.- franchID - divID - lgID, data=train, method="xgbTree", trControl=tc, tuneGrid=tg)
 
-xgb_pred <- get_top_predictions(test, xgb.model)
+xgb_pred <- get_div_predictions(test, xgb.model)
 outputs[3,] <- record_outputs('XGB', xgb_pred, rf.model)
 
 print(logit.model)
