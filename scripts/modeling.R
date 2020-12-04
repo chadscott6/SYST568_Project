@@ -34,16 +34,31 @@ outputs <- data.frame(model_name=character(),
                  recall=numeric(),
                  f1score=numeric())
 
-# NOTE: this does not work yet
-get_division_predictions <- function(data, model) {
-  data$playoff_prob = predict(logit.model, data, type="response")
-  playoff_teams <- data %>%
-    group_by(yearID,lgID,divID) %>%
-    slice_max(playoff_prob, n = 1, with_ties = FALSE)
-  playoff_teams$playoff_pred = 'Y'
-  pred <- merge(test, playoff_teams, all.x=TRUE)
-  pred$playoff_pred[is.na(pred$playoff_pred)] <- 'N'
-  return(pred$playoff_pred)
+playoff_div_year <- read.csv('../data/input/playoffs_year.csv')
+
+get_div_predictions <- function(data, model) {
+  total_pred = vector()
+  for (year in unique(data$yearID)) {
+    year_data = filter(data,  yearID==year)
+    year_data$playoff_prob = predict(model, year_data, type="prob")[,2]
+    playoff_div <- filter(playoff_div_year, yearID==year)$div
+    playoff_wc <- filter(playoff_div_year, yearID==year)$wc
+    playoff_teams <- year_data %>%
+      group_by(lgID,divID) %>%
+      slice_max(playoff_prob, n = playoff_div, with_ties = FALSE)
+    playoff_teams$playoff_pred = 'Y'
+    pred <- merge(year_data, playoff_teams, all.x=TRUE)
+    if (playoff_wc > 0) {
+      wc_teams <- filter(pred, is.na(pred$playoff_pred))
+      wc_teams <- wc_teams %>%
+        group_by(lgID) %>%
+        slice_max(playoff_prob, n = playoff_wc, with_ties = FALSE)
+      pred[pred$franchID %in% wc_teams$franchID,]$playoff_pred = 'Y'
+    }
+    pred$playoff_pred[is.na(pred$playoff_pred)] <- 'N'
+    total_pred = append(total_pred, pred$playoff_pred)
+  }
+  return(total_pred)
 }
 
 get_top_predictions <- function(data, model) {
@@ -79,9 +94,9 @@ record_outputs <- function(model_name, pred, model) {
 
 tc <- trainControl(method = "repeatedCV", number=10, repeats=2)
 tg <- expand.grid(nIter=c(1,2,5,10))
-logit.model <- train(playoff_nextyear~. - franchID, data=train, method="LogitBoost", trControl=tc, tuneGrid=tg)
+logit.model <- train(playoff_nextyear~. - franchID - divID - lgID, data=train, method="LogitBoost", trControl=tc, tuneGrid=tg)
 
-logit_pred <- get_top_predictions(test, logit.model)
+logit_pred <- get_div_predictions(test, logit.model)
 outputs[1,] <- record_outputs('Logit Regression', logit_pred, logit.model)
 
 
@@ -89,9 +104,9 @@ outputs[1,] <- record_outputs('Logit Regression', logit_pred, logit.model)
 
 tc <- trainControl(method = "repeatedCV", number=10, repeats=2)
 tg <- expand.grid(mtry=c(15,20,25,30))
-rf.model <- train(playoff_nextyear~.- franchID, data=train, method="rf", trControl=tc, tuneGrid=tg)
+rf.model <- train(playoff_nextyear~.- franchID - divID - lgID, data=train, method="rf", trControl=tc, tuneGrid=tg)
 
-rf_pred <- get_top_predictions(test, rf.model)
+rf_pred <- get_div_predictions(test, rf.model)
 outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
 
 ###### XGB ########
@@ -104,9 +119,9 @@ tg <- expand.grid(nrounds=c(50,100, 150),
                   colsample_bytree=c(0.6,0.8),
                   min_child_weight=c(1),
                   subsample=c(.5,.75,1))
-xgb.model <- train(playoff_nextyear~.- franchID, data=train, method="xgbTree", trControl=tc, tuneGrid=tg)
+xgb.model <- train(playoff_nextyear~.- franchID - divID - lgID, data=train, method="xgbTree", trControl=tc, tuneGrid=tg)
 
-xgb_pred <- get_top_predictions(test, xgb.model)
+xgb_pred <- get_div_predictions(test, xgb.model)
 outputs[3,] <- record_outputs('XGB', xgb_pred, rf.model)
 
 print(logit.model)
