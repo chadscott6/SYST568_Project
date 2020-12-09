@@ -23,7 +23,7 @@ playoffs_year <- playoffs_year[,c(1,3)]
 # train-test split by yearID
 set.seed(12345)
 years <- unique(final_teams_salary$yearID)
-train_years <- sample(years, 0.8*length(years))
+train_years <- sample(years, 0.75*length(years))
 test_years <- setdiff(years, train_years)
 train <- subset(final_teams_salary, yearID %in% train_years)
 test <- subset(final_teams_salary, yearID %in% test_years)
@@ -34,7 +34,7 @@ outputs <- data.frame(model_name=character(),
                  recall=numeric(),
                  f1score=numeric())
 
-playoff_div_year <- read.csv('../data/input/playoffs_year.csv')
+playoff_div_year <- read.csv('./data/input/playoffs_year.csv')
 
 get_div_predictions <- function(data, model) {
   total_pred = vector()
@@ -92,9 +92,9 @@ record_outputs <- function(model_name, pred, model) {
 
 ####### Logit regression #########
 
-tc <- trainControl(method = "repeatedCV", number=10, repeats=2)
-tg <- expand.grid(nIter=c(1,2,5,10))
-logit.model <- train(playoff_nextyear~.-franchID, data=train, method="LogitBoost", trControl=tc, tuneGrid=tg)
+tc <- trainControl(method = "repeatedCV", number=5, repeats=2)
+#tg <- expand.grid(nIter=c(1,2,5,10))
+logit.model <- train(playoff_nextyear~.-franchID, data=train, method="plr", trControl=tc)#, tuneGrid=tg)
 
 logit_pred <- get_div_predictions(test, logit.model)
 outputs[1,] <- record_outputs('Logit Regression', logit_pred, logit.model)
@@ -102,17 +102,17 @@ outputs[1,] <- record_outputs('Logit Regression', logit_pred, logit.model)
 
 ###### Random Forest ########
 
-tc <- trainControl(method = "repeatedCV", number=10, repeats=2)
+tc <- trainControl(method = "repeatedCV", number=5, repeats=2)
 tg <- expand.grid(mtry=c(15,20,25,30))
 rf.model <- train(playoff_nextyear~.-franchID, data=train, method="rf", trControl=tc, tuneGrid=tg)
 
-rf_pred <- get_top_predictions(test, rf.model)
+rf_pred <- get_div_predictions(test, rf.model)
 outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
 
 
 ###### XGB ########
 
-tc <- trainControl(method = "repeatedCV", number=10, repeats=1)
+tc <- trainControl(method = "repeatedCV", number=5, repeats=1)
 tg <- expand.grid(nrounds=c(50,100, 150),
                   max_depth=c(1,3,5,10),
                   eta=c(0.3,0.4),
@@ -122,7 +122,7 @@ tg <- expand.grid(nrounds=c(50,100, 150),
                   subsample=c(.5,.75,1))
 xgb.model <- train(playoff_nextyear~.-franchID, data=train, method="xgbTree", trControl=tc, tuneGrid=tg)
 
-xgb_pred <- get_top_predictions(test, xgb.model)
+xgb_pred <- get_div_predictions(test, xgb.model)
 outputs[3,] <- record_outputs('XGB', xgb_pred, rf.model)
 
 print(logit.model)

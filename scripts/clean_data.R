@@ -101,5 +101,5 @@
 
 # write out to csv
   dir.create('data', showWarning=FALSE)
-  write.csv(final_teams, file.path('data', 'final_teams.csv'))
+  #write.csv(final_teams, file.path('data', 'final_teams.csv'))
   write.csv(final_teams_salary, file.path('data', 'final_teams_salary.csv'))
