@@ -34,12 +34,12 @@ outputs <- data.frame(model_name=character(),
                  recall=numeric(),
                  f1score=numeric())
 
-playoff_div_year <- read.csv('../data/input/playoffs_year.csv')
+playoff_div_year <- read.csv('./data/input/playoffs_year.csv')
 
 get_div_predictions <- function(data, model) {
   total_pred = vector()
-  for (year in unique(data$yearID)) {
-    year_data = filter(data,  yearID==year)
+  for (year in unique(test$yearID)) {
+    year_data = filter(test,  yearID==year)
     year_data$playoff_prob = predict(model, year_data, type="prob")[,2]
     playoff_div <- filter(playoff_div_year, yearID==year)$div
     playoff_wc <- filter(playoff_div_year, yearID==year)$wc
@@ -93,8 +93,8 @@ record_outputs <- function(model_name, pred, model) {
 ####### Logit regression #########
 
 tc <- trainControl(method = "repeatedCV", number=10, repeats=2)
-tg <- expand.grid(nIter=c(1,2,5,10))
-logit.model <- train(playoff_nextyear~.-franchID, data=train, method="LogitBoost", trControl=tc, tuneGrid=tg)
+#tg <- expand.grid()
+logit.model <- train(playoff_nextyear~.-franchID, data=train, method="plr", trControl=tc)#, tuneGrid=tg)
 
 logit_pred <- get_div_predictions(test, logit.model)
 outputs[1,] <- record_outputs('Logit Regression', logit_pred, logit.model)
@@ -106,7 +106,7 @@ tc <- trainControl(method = "repeatedCV", number=10, repeats=2)
 tg <- expand.grid(mtry=c(15,20,25,30))
 rf.model <- train(playoff_nextyear~.-franchID, data=train, method="rf", trControl=tc, tuneGrid=tg)
 
-rf_pred <- get_top_predictions(test, rf.model)
+rf_pred <- get_div_predictions(test, rf.model)
 outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
 
 
@@ -122,7 +122,7 @@ tg <- expand.grid(nrounds=c(50,100, 150),
                   subsample=c(.5,.75,1))
 xgb.model <- train(playoff_nextyear~.-franchID, data=train, method="xgbTree", trControl=tc, tuneGrid=tg)
 
-xgb_pred <- get_top_predictions(test, xgb.model)
+xgb_pred <- get_div_predictions(test, xgb.model)
 outputs[3,] <- record_outputs('XGB', xgb_pred, rf.model)
 
 print(logit.model)
@@ -153,7 +153,7 @@ p + theme(axis.text.x=element_text(size=12, angle=90, vjust=0.5, hjust=1),
 var_importance <- varImp(xgb.model, scale=FALSE)$importance
 var_importance <- setDT(var_importance, keep.rownames='variable')
 var_importance <- arrange(var_importance, desc(Overall))
-
+ 
 p <- ggplot(var_importance, aes(x=variable, weight=Overall))
 p <- p + geom_bar() + ggtitle("Variable Importance from XGB Fit")
 p <- p + xlab("Variable") + ylab("Importance (average increase in accuracy)")

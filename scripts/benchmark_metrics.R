@@ -31,4 +31,4 @@ bm.f1score = 2*(bm.precision*bm.recall / (bm.precision+bm.recall))
 print(bm.accuracy)
 print(bm.f1score)
 # benchmark accuracy score is approx. 0.622
-# benchmark f1 score is approx. 0.281
+# benchmark f1 score is approx. 0.281 
