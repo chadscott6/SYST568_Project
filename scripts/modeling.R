@@ -99,6 +99,20 @@ logit.model <- train(playoff_nextyear~.-franchID -yearID -lgID - divID, data=tra
 logit_pred <- get_div_predictions(test, logit.model)
 outputs[1,] <- record_outputs('Logit Regression', logit_pred, logit.model)
 
+## Logit Regression with fewer predictor variables ##
+# logit.model1 removes variables with Prob over 0.5 from logit.model
+logit.model1 <- train(playoff_nextyear~.-franchID -yearID -lgID - divID -X2B_G - BB_G - SB_G - HBP_G - SF_G - RA_G - ER_G - CG_G - 
+                        SHO_G - SV_G - IPouts_G - HA_G - SOA_G - E_G - DP_G - Playoffs, data=train, method="plr", trControl=tc)#, tuneGrid=tg)
+
+logit_pred1 <- get_div_predictions(test, logit.model1)
+outputs[4,] <- record_outputs('Logit Regression 1', logit_pred1, logit.model1)
+
+# compare logit models
+print(logit.model1)
+print(logit.model)
+summary(logit.model1)
+summary(logit.model)
+
 
 ###### Random Forest ########
 
@@ -123,7 +137,7 @@ tg <- expand.grid(nrounds=c(50,100, 150),
 xgb.model <- train(playoff_nextyear~.-franchID -yearID -lgID - divID, data=train, method="xgbTree", trControl=tc, tuneGrid=tg)
 
 xgb_pred <- get_div_predictions(test, xgb.model)
-outputs[3,] <- record_outputs('XGB', xgb_pred, rf.model)
+outputs[3,] <- record_outputs('XGB', xgb_pred, xgb.model)
 
 print(logit.model)
 print(rf.model)
@@ -164,3 +178,6 @@ p + theme(axis.text.x=element_text(size=12, angle=90, vjust=0.5, hjust=1),
 
 final %>% filter(yearID == max(test$yearID)) %>% select(yearID, franchID, playoff_nextyear, pred)
 print(final)
+
+
+
