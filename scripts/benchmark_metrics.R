@@ -74,9 +74,9 @@ run_benchmarks <- function(final_teams_salary) {
   results_random
   results_random[2,] <- record_outputs("random < 1992",table(final_teams_salary[yearID<1992,]$total_random_pred, final_teams_salary[yearID<1992,]$playoff_nextyear))
   results_random
-  results_random[3,] <- record_outputs("random 1993 - 2010",table(final_teams_salary[yearID>1993 & yearID <= 2010,]$total_random_pred, final_teams_salary[yearID>1993 & yearID <= 2010,]$playoff_nextyear))
+  results_random[3,] <- record_outputs("random 1993 - 2010",table(final_teams_salary[yearID>1992 & yearID <= 2010,]$total_random_pred, final_teams_salary[yearID>1992 & yearID <= 2010,]$playoff_nextyear))
   results_random
-  results_random[4,] <- record_outputs("random 2011 - present",table(final_teams_salary[yearID>2011,]$total_random_pred, final_teams_salary[yearID>2011,]$playoff_nextyear))
+  results_random[4,] <- record_outputs("random 2011 - present",table(final_teams_salary[yearID>=2011,]$total_random_pred, final_teams_salary[yearID>=2011,]$playoff_nextyear))
 
   return(results_random)
 }

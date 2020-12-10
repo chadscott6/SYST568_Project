@@ -142,8 +142,8 @@ fit_models <- function(final_teams_salary) {
   
   results[1,] <- results_year("rf all years", table(final_rf$playoff_nextyear, final_rf$pred))
   results[2,] <- results_year("rf < 1992",table(final_rf[yearID<1992,]$pred, final_rf[yearID<1992,]$playoff_nextyear))
-  results[3,] <- results_year("rf 1993 - 2010",table(final_rf[yearID>1993 & yearID <= 2010,]$pred, final_rf[yearID>1993 & yearID <= 2010,]$playoff_nextyear))
-  results[4,] <- results_year("rf 2011 - present",table(final_rf[yearID>2011,]$pred, final_rf[yearID>2011,]$playoff_nextyear))
+  results[3,] <- results_year("rf 1993 - 2010",table(final_rf[yearID>1992 & yearID <= 2010,]$pred, final_rf[yearID>1992 & yearID <= 2010,]$playoff_nextyear))
+  results[4,] <- results_year("rf 2011 - present",table(final_rf[yearID>=2011,]$pred, final_rf[yearID>=2011,]$playoff_nextyear))
 
   
   ## logit ##############################################################
@@ -154,8 +154,8 @@ fit_models <- function(final_teams_salary) {
   
   results[5,] <- results_year("logit all years", table(final_logit$playoff_nextyear, final_logit$pred))
   results[6,] <- results_year("logit < 1992",table(final_logit[yearID<1992,]$pred, final_logit[yearID<1992,]$playoff_nextyear))
-  results[7,] <- results_year("logit 1993 - 2010",table(final_logit[yearID>1993 & yearID <= 2010,]$pred, final_logit[yearID>1993 & yearID <= 2010,]$playoff_nextyear))
-  results[8,] <- results_year("logit 2011 - present",table(final_logit[yearID>2011,]$pred, final_logit[yearID>2011,]$playoff_nextyear))
+  results[7,] <- results_year("logit 1993 - 2010",table(final_logit[yearID>1992 & yearID <= 2010,]$pred, final_logit[yearID>1992 & yearID <= 2010,]$playoff_nextyear))
+  results[8,] <- results_year("logit 2011 - present",table(final_logit[yearID>=2011,]$pred, final_logit[yearID>=2011,]$playoff_nextyear))
 
   ## xgb ##############################################################
   final_xgb <- data.frame(test)
@@ -165,8 +165,8 @@ fit_models <- function(final_teams_salary) {
 
   results[9,] <- results_year("xgb all years", table(final_xgb$playoff_nextyear, final_xgb$pred))
   results[10,] <- results_year("xgb < 1992",table(final_xgb[yearID<1992,]$pred, final_xgb[yearID<1992,]$playoff_nextyear))
-  results[11,] <- results_year("xgb 1993 - 2010",table(final_xgb[yearID>1993 & yearID <= 2010,]$pred, final_xgb[yearID>1993 & yearID <= 2010,]$playoff_nextyear))
-  results[12,] <- results_year("xgb 2011 - present",table(final_xgb[yearID>2011,]$pred, final_xgb[yearID>2011,]$playoff_nextyear))
+  results[11,] <- results_year("xgb 1993 - 2010",table(final_xgb[yearID>1992 & yearID <= 2010,]$pred, final_xgb[yearID>1992 & yearID <= 2010,]$playoff_nextyear))
+  results[12,] <- results_year("xgb 2011 - present",table(final_xgb[yearID>=2011,]$pred, final_xgb[yearID>=2011,]$playoff_nextyear))
   
   generate_vis(rf.model, xgb.model)
   return(results)
