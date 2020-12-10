@@ -61,6 +61,14 @@ get_div_predictions <- function(data, model) {
   return(total_pred)
 }
 
+f1 <- function(data, lev = NULL, model = NULL) {
+  full <- left_join(data, train %>% mutate(rowIndex=as.numeric(rownames(train))), by="rowIndex")
+  #(dim(full))
+  print(full)
+  data$pred <- get_div_predictions(model, full)
+  f1_val <- F1_Score(y_pred = data$pred, y_true = data$obs, positive = lev[1])
+}
+
 get_top_predictions <- function(data, model) {
   total_pred = vector()
   for (year in unique(data$yearID)) {
@@ -92,9 +100,9 @@ record_outputs <- function(model_name, pred, model) {
 
 ####### Logit regression #########
 
-tc <- trainControl(method = "repeatedCV", number=5, repeats=2)
+tc <- trainControl(method = "repeatedCV", number=5, summaryFunction=f1, index=folds, classProbs=TRUE)
 #tg <- expand.grid(nIter=c(1,2,5,10))
-logit.model <- train(playoff_nextyear~.-franchID, data=train, method="plr", trControl=tc)#, tuneGrid=tg)
+logit.model <- train(playoff_nextyear~.-franchID, data=train, metric="F1", method="plr", trControl=tc)#, tuneGrid=tg)
 
 logit_pred <- get_div_predictions(test, logit.model)
 outputs[1,] <- record_outputs('Logit Regression', logit_pred, logit.model)
@@ -102,9 +110,9 @@ outputs[1,] <- record_outputs('Logit Regression', logit_pred, logit.model)
 
 ###### Random Forest ########
 
-tc <- trainControl(method = "repeatedCV", number=5, repeats=2)
+tc <- trainControl(method = "repeatedCV", number=5, repeats=2, summaryFunction=f1, classProbs=TRUE)
 tg <- expand.grid(mtry=c(15,20,25,30))
-rf.model <- train(playoff_nextyear~.-franchID, data=train, method="rf", trControl=tc, tuneGrid=tg)
+rf.model <- train(playoff_nextyear~.-franchID, data=train, method="rf", trControl=tc, metric="F1")#, tuneGrid=tg)
 
 rf_pred <- get_div_predictions(test, rf.model)
 outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
