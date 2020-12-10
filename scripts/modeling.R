@@ -34,7 +34,7 @@ outputs <- data.frame(model_name=character(),
                  recall=numeric(),
                  f1score=numeric())
 
-playoff_div_year <- read.csv('./data/input/playoffs_year.csv')
+playoff_div_year <- read.csv('../data/input/playoffs_year.csv')
 
 get_div_predictions <- function(data, model) {
   total_pred = vector()
@@ -59,14 +59,6 @@ get_div_predictions <- function(data, model) {
     total_pred = append(total_pred, pred$playoff_pred)
   }
   return(total_pred)
-}
-
-f1 <- function(data, lev = NULL, model = NULL) {
-  full <- left_join(data, train %>% mutate(rowIndex=as.numeric(rownames(train))), by="rowIndex")
-  #(dim(full))
-  print(full)
-  data$pred <- get_div_predictions(model, full)
-  f1_val <- F1_Score(y_pred = data$pred, y_true = data$obs, positive = lev[1])
 }
 
 get_top_predictions <- function(data, model) {
@@ -100,19 +92,35 @@ record_outputs <- function(model_name, pred, model) {
 
 ####### Logit regression #########
 
-tc <- trainControl(method = "repeatedCV", number=5, summaryFunction=f1, index=folds, classProbs=TRUE)
+tc <- trainControl(method = "repeatedCV", number=5)
 #tg <- expand.grid(nIter=c(1,2,5,10))
-logit.model <- train(playoff_nextyear~.-franchID, data=train, metric="F1", method="plr", trControl=tc)#, tuneGrid=tg)
+
+logit.model <- train(playoff_nextyear~.-franchID -yearID -lgID - divID, data=train, method="plr", trControl=tc)#, tuneGrid=tg)
 
 logit_pred <- get_div_predictions(test, logit.model)
 outputs[1,] <- record_outputs('Logit Regression', logit_pred, logit.model)
 
+## Logit Regression with fewer predictor variables ##
+# logit.model1 removes variables with Prob over 0.5 from logit.model
+logit.model1 <- train(playoff_nextyear~.-franchID -yearID -lgID - divID -X2B_G - BB_G - SB_G - HBP_G - SF_G - RA_G - ER_G - CG_G - 
+                        SHO_G - SV_G - IPouts_G - HA_G - SOA_G - E_G - DP_G - Playoffs, data=train, method="plr", trControl=tc)#, tuneGrid=tg)
+
+logit_pred1 <- get_div_predictions(test, logit.model1)
+outputs[4,] <- record_outputs('Logit Regression 1', logit_pred1, logit.model1)
+
+# compare logit models
+print(logit.model1)
+print(logit.model)
+summary(logit.model1)
+summary(logit.model)
+
 
 ###### Random Forest ########
 
-tc <- trainControl(method = "repeatedCV", number=5, repeats=2, summaryFunction=f1, classProbs=TRUE)
+tc <- trainControl(method = "repeatedCV", number=5, repeats=2)
 tg <- expand.grid(mtry=c(15,20,25,30))
-rf.model <- train(playoff_nextyear~.-franchID, data=train, method="rf", trControl=tc, metric="F1")#, tuneGrid=tg)
+
+rf.model <- train(playoff_nextyear~.-franchID -yearID -lgID - divID, data=train, method="rf", trControl=tc, tuneGrid=tg)
 
 rf_pred <- get_div_predictions(test, rf.model)
 outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
@@ -120,7 +128,7 @@ outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model)
 
 ###### XGB ########
 
-tc <- trainControl(method = "repeatedCV", number=5, repeats=1)
+tc <- trainControl(method = "repeatedCV", number=5, repeats=2)
 tg <- expand.grid(nrounds=c(50,100, 150),
                   max_depth=c(1,3,5,10),
                   eta=c(0.3,0.4),
@@ -128,10 +136,10 @@ tg <- expand.grid(nrounds=c(50,100, 150),
                   colsample_bytree=c(0.6,0.8),
                   min_child_weight=c(1),
                   subsample=c(.5,.75,1))
-xgb.model <- train(playoff_nextyear~.-franchID, data=train, method="xgbTree", trControl=tc, tuneGrid=tg)
+xgb.model <- train(playoff_nextyear~.-franchID -yearID -lgID - divID, data=train, method="xgbTree", trControl=tc, tuneGrid=tg)
 
 xgb_pred <- get_div_predictions(test, xgb.model)
-outputs[3,] <- record_outputs('XGB', xgb_pred, rf.model)
+outputs[3,] <- record_outputs('XGB', xgb_pred, xgb.model)
 
 print(logit.model)
 print(rf.model)
@@ -140,7 +148,7 @@ print(outputs)
 
 ##### Exploring results ######
 final <- data.frame(test)
-final$pred <- xgb_pred
+final$pred <- rf_pred
 
 final[1:5,]
 
@@ -172,3 +180,7 @@ p + theme(axis.text.x=element_text(size=12, angle=90, vjust=0.5, hjust=1),
 
 final %>% filter(yearID == max(test$yearID)) %>% select(yearID, franchID, playoff_nextyear, pred)
 print(final)
+
+table(final$playoff_nextyear, final$pred)
+outputs
+
