@@ -1,5 +1,5 @@
 # SYST 568 Project
-# Data Cleaning. Created by Chad Scott. Last updated 12/01/2020 by Jonathan Nelson.
+# Data Cleaning. Created by Chad Scott. Last updated 12/3/2020 by Jonathan Nelson.
   #options(max.print = 10000)
 # Install Lahman package
 #  install.packages("Lahman")
@@ -12,8 +12,9 @@
 # view all available data sets in the Lahman package  
   #data( package = "Lahman")
   
+generate_data <- function() {
 # load in Teams data
-  data("Teams")
+  data("Teams") 
   Teams <- data.table(Teams)
 # explore Teams data
   str(Teams)
@@ -53,7 +54,7 @@
   Salaries
   
 # add 2017 - 2019 salaries
-  Sal_17_19 <- read.csv('../data/input/salaries2017-19.csv')
+  Sal_17_19 <- read.csv(here::here('data/input/salaries2017-19.csv'))
   setnames(Sal_17_19, "salary","TeamSalary")
   Salaries <- rbind(Salaries,Sal_17_19)
   
@@ -79,3 +80,6 @@
   dir.create('data', showWarning=FALSE)
   #write.csv(final_teams, file.path('data', 'final_teams.csv'))
   write.csv(final_teams_salary, file.path('data', 'final_teams_salary.csv'))
+  
+  return(final_teams_salary)
+}
