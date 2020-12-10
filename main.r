@@ -2,11 +2,17 @@ source('scripts/clean_data.r')
 source('scripts/modeling.r')
 source('scripts/benchmark_metrics.r')
 
-final_data <- generate_data()
 
-print('Accuracy and f1 score for randomized prediction:')
-print(generate_benchmarks(final_data))
+# final_data <- generate_data()
+
+final_data = read.csv(here::here('data/final_teams_salary.csv'))[,-1]
 
 
-modeling_outputs <- run_models()
+print('Brenchmarks off of randomized predictions:')
+print(run_benchmarks(final_data))
+
+
+modeling_outputs <- fit_models(final_data)
+
+print('Model Outputs:')
 print(modeling_outputs)

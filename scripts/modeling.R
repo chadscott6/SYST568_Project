@@ -50,9 +50,11 @@ get_top_predictions <- function(data, model) {
   return(total_pred)
 }
 
-record_outputs <- function(model_name, pred, model, test) {
 
-  ConMatrix = table(test$playoff_nextyear, pred)
+### record results by year####################################
+results_year <- function(model_name, ConMatrix) {
+  
+  #ConMatrix = table(test$playoff_nextyear, pred)
   # calculate metrics
   accuracy = (ConMatrix[1, 1] + ConMatrix[2, 2]) /  sum(ConMatrix)
   precision = ConMatrix[2, 2] / (ConMatrix[2, 2] + ConMatrix[1, 2])
@@ -62,9 +64,10 @@ record_outputs <- function(model_name, pred, model, test) {
   return(list(model_name, accuracy, precision, recall, f1score))
 }
 
-run_models <- function() {
-  
-  final_teams_salary = read.csv('./data/final_teams_salary.csv')[,-1]
+
+fit_models <- function(final_teams_salary) {
+
+  # final_teams_salary = read.csv('./data/final_teams_salary.csv')[,-1]
   
   factor_cols = c('playoff_nextyear')
   final_teams_salary[factor_cols] <- lapply(final_teams_salary[factor_cols] , factor)
@@ -84,12 +87,7 @@ run_models <- function() {
   test_years <- setdiff(years, train_years)
   train <- subset(final_teams_salary, yearID %in% train_years)
   test <- subset(final_teams_salary, yearID %in% test_years)
-  
-  outputs <- data.frame(model_name=character(),
-                        accuracy=numeric(),
-                        precision=numeric(),
-                        recall=numeric(),
-                        f1score=numeric())
+
   
   ####### Logit regression #########
   
@@ -100,12 +98,11 @@ run_models <- function() {
   ## Logit Regression with fewer predictor variables ##
   # logit.model1 removes variables with Prob over 0.5 from original model
   logit.model <- train(playoff_nextyear~.-franchID -yearID -lgID - divID -X2B_G - BB_G - SB_G - HBP_G - SF_G - RA_G - ER_G - CG_G - 
-                          SHO_G - SV_G - IPouts_G - HA_G - SOA_G - E_G - DP_G - Playoffs, data=train, method="plr", trControl=tc)#, tuneGrid=tg)
+                         SHO_G - SV_G - IPouts_G - HA_G - SOA_G - E_G - DP_G - Playoffs, data=train, method="plr", trControl=tc)#, tuneGrid=tg)
   
   logit_pred <- get_div_predictions(test, logit.model)
-  outputs[1,] <- record_outputs('Logit Regression', logit_pred, logit.model, test)
-  
 
+  
   ###### Random Forest ########
   
   tc <- trainControl(method = "repeatedCV", number=5, repeats=2)
@@ -114,8 +111,7 @@ run_models <- function() {
   rf.model <- train(playoff_nextyear~.-franchID -yearID -lgID - divID, data=train, method="rf", trControl=tc, tuneGrid=tg)
   
   rf_pred <- get_div_predictions(test, rf.model)
-  outputs[2,] <- record_outputs('Random Forest', rf_pred, rf.model, test)
-  
+
   
   ###### XGB ########
   
@@ -130,24 +126,55 @@ run_models <- function() {
   xgb.model <- train(playoff_nextyear~.-franchID -yearID -lgID - divID, data=train, method="xgbTree", trControl=tc, tuneGrid=tg)
   
   xgb_pred <- get_div_predictions(test, xgb.model)
-  outputs[3,] <- record_outputs('XGB', xgb_pred, xgb.model, test)
+
+  
+  results <- data.frame(model_name=character(),
+                        accuracy=numeric(),
+                        precision=numeric(),
+                        recall=numeric(),
+                        f1score=numeric())
+  
+  ## rf ##############################################################
+  final_rf <- data.frame(test)
+  final_rf$pred <- rf_pred
+  final_rf <- data.table(final_rf)
+  
+  
+  results[1,] <- results_year("rf all years", table(final_rf$playoff_nextyear, final_rf$pred))
+  results[2,] <- results_year("rf < 1992",table(final_rf[yearID<1992,]$pred, final_rf[yearID<1992,]$playoff_nextyear))
+  results[3,] <- results_year("rf 1993 - 2010",table(final_rf[yearID>1993 & yearID <= 2010,]$pred, final_rf[yearID>1993 & yearID <= 2010,]$playoff_nextyear))
+  results[4,] <- results_year("rf 2011 - present",table(final_rf[yearID>2011,]$pred, final_rf[yearID>2011,]$playoff_nextyear))
+
+  
+  ## logit ##############################################################
+  final_logit <- data.frame(test)
+  final_logit$pred <- logit_pred
+  final_logit <- data.table(final_logit)
+
+  
+  results[5,] <- results_year("logit all years", table(final_logit$playoff_nextyear, final_logit$pred))
+  results[6,] <- results_year("logit < 1992",table(final_logit[yearID<1992,]$pred, final_logit[yearID<1992,]$playoff_nextyear))
+  results[7,] <- results_year("logit 1993 - 2010",table(final_logit[yearID>1993 & yearID <= 2010,]$pred, final_logit[yearID>1993 & yearID <= 2010,]$playoff_nextyear))
+  results[8,] <- results_year("logit 2011 - present",table(final_logit[yearID>2011,]$pred, final_logit[yearID>2011,]$playoff_nextyear))
+
+  ## xgb ##############################################################
+  final_xgb <- data.frame(test)
+  final_xgb$pred <- xgb_pred
+  final_xgb <- data.table(final_xgb)
+  
+
+  results[9,] <- results_year("xgb all years", table(final_xgb$playoff_nextyear, final_xgb$pred))
+  results[10,] <- results_year("xgb < 1992",table(final_xgb[yearID<1992,]$pred, final_xgb[yearID<1992,]$playoff_nextyear))
+  results[11,] <- results_year("xgb 1993 - 2010",table(final_xgb[yearID>1993 & yearID <= 2010,]$pred, final_xgb[yearID>1993 & yearID <= 2010,]$playoff_nextyear))
+  results[12,] <- results_year("xgb 2011 - present",table(final_xgb[yearID>2011,]$pred, final_xgb[yearID>2011,]$playoff_nextyear))
   
   generate_vis(rf.model, xgb.model)
-  
-  return(outputs)
-
+  return(results)
 }
 
-##### Exploring results ######
-# final <- data.frame(test)
-# final$pred <- rf_pred
-# 
-# final[1:5,]
-
-# Visualization
 
 generate_vis <- function(rf.model, xgb.model) {
-
+  
   var_importance <- varImp(rf.model, scale=FALSE)$importance
   var_importance <- setDT(var_importance, keep.rownames='variable')
   var_importance <- arrange(var_importance, desc(Overall))
@@ -156,9 +183,9 @@ generate_vis <- function(rf.model, xgb.model) {
   rf_p <- rf_p + geom_bar() + ggtitle("Variable Importance from Random Forest Fit")
   rf_p <- rf_p + xlab("Variable") + ylab("Importance (average increase in accuracy)")
   rf_p + theme(axis.text.x=element_text(size=12, angle=90, vjust=0.5, hjust=1),
-            axis.text.y=element_text(size=12),
-            axis.title=element_text(size=16),
-            plot.title=element_text(size=18))
+               axis.text.y=element_text(size=12),
+               axis.title=element_text(size=16),
+               plot.title=element_text(size=18))
   print(rf_p)
   
   var_importance <- varImp(xgb.model, scale=FALSE)$importance
@@ -169,8 +196,9 @@ generate_vis <- function(rf.model, xgb.model) {
   xgb_p <- xgb_p + geom_bar() + ggtitle("Variable Importance from XGB Fit")
   xgb_p <- xgb_p + xlab("Variable") + ylab("Importance (average increase in accuracy)")
   xgb_p + theme(axis.text.x=element_text(size=12, angle=90, vjust=0.5, hjust=1),
-            axis.text.y=element_text(size=12),
-            axis.title=element_text(size=16),
-            plot.title=element_text(size=18))
+                axis.text.y=element_text(size=12),
+                axis.title=element_text(size=16),
+                plot.title=element_text(size=18))
   print(xgb_p)
 }
+
