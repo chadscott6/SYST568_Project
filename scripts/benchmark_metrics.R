@@ -1,8 +1,8 @@
 # Determine benchmark metrics, randomizing playoff teams
-
 generate_benchmarks <- function(final_teams_salary) {
-  # get number of playoff teams per year
   final_teams_salary <- filter(final_teams_salary, yearID!=2019)
+    
+  # get number of playoff teams per year
   playoffs_year <- final_teams_salary %>%
     group_by(yearID) %>%
     count(playoff_nextyear) %>%
@@ -24,6 +24,7 @@ generate_benchmarks <- function(final_teams_salary) {
   }
   # produce confusion matrix
   bm.ConMatrix = table(final_teams_salary$playoff_nextyear, total_random_pred)
+  # print(bm.ConMatrix)
   # calculate metrics
   bm.accuracy = (bm.ConMatrix[1, 1] + bm.ConMatrix[2, 2]) /  sum(bm.ConMatrix)
   bm.precision = bm.ConMatrix[2, 2] / (bm.ConMatrix[2, 2] + bm.ConMatrix[1, 2])
@@ -31,6 +32,6 @@ generate_benchmarks <- function(final_teams_salary) {
   bm.f1score = 2*(bm.precision*bm.recall / (bm.precision+bm.recall))
 
   # benchmark accuracy score is approx. 0.622
-  # benchmark f1 score is approx. 0.281
+  # benchmark f1 score is approx. 0.278
   return(c(bm.accuracy, bm.f1score))
 }
