@@ -146,7 +146,7 @@ print(outputs)
 
 ##### Exploring results ######
 final <- data.frame(test)
-final$pred <- xgb_pred
+final$pred <- rf_pred
 
 final[1:5,]
 
@@ -179,5 +179,6 @@ p + theme(axis.text.x=element_text(size=12, angle=90, vjust=0.5, hjust=1),
 final %>% filter(yearID == max(test$yearID)) %>% select(yearID, franchID, playoff_nextyear, pred)
 print(final)
 
-
+table(final$playoff_nextyear, final$pred)
+outputs
 
