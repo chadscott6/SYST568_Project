@@ -2,7 +2,6 @@
 # Model Exploration. Last updated 12/10/2020
 
 library(ggplot2)
-library(ROCR)
 library(randomForest)
 library(caret)
 library(dplyr)
