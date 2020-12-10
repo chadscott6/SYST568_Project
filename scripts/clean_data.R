@@ -60,9 +60,9 @@
   Teams[yearID<1994 & DivWin=="Y", Playoffs:="Y"]
 
 # creating playoffs Lag variable
-  setkey(Teams, teamID, yearID) # important for ordering
-  Teams[,playoff_nextyear:=(shift(Playoffs, -1)),by=teamID]  
-  Teams[teamID=='ATL',c(1:20,46:50)] 
+  setkey(Teams, franchID, yearID) # important for ordering
+  Teams[,playoff_nextyear:=(shift(Playoffs, -1)),by=franchID]  
+  Teams[franchID=='ATL',c(1:20,46:50)] 
 
   
 ### Team Salaries ############################################################
