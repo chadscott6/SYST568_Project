@@ -52,13 +52,22 @@
   # creating DivWin and WCWin for 1994 season
   Teams$lg_div <-paste(Teams$lgID,Teams$divID)
   Teams$DivWin[Teams[yearID==1994,.I[W == max(W)],by=lg_div]$V1] <- 'Y'
-  Teams$WCWin[Teams[yearID==1994 & is.na(DivWin),.I[W == max(W)],by=lgID]$V1] <- 'Y'
-  Teams[yearID==1994,]
+  Teams[yearID==1994 & teamID=="BOS", WCWin:= "Y"] #doing this manually to save time
+  
+  ## fixing 1994 ##
+  # Teams[yearID==1994 & DivWin=="Y",]
+  # Teams[yearID==1994,max(W),by=lg_div]
+  # Teams[yearID==1994 & is.na(DivWin) & lgID== "AL",]
+  
   
   Teams$Playoffs <- "N"
   Teams[yearID>1993 & (DivWin=="Y" | WCWin=="Y"), Playoffs:= "Y"]
   Teams[yearID<1994 & DivWin=="Y", Playoffs:="Y"]
 
+  Teams[yearID==1994 & Playoffs == "Y",]
+  
+  
+  
 # creating playoffs Lag variable
   setkey(Teams, franchID, yearID) # important for ordering
   Teams[,playoff_nextyear:=(shift(Playoffs, -1)),by=franchID]  
@@ -103,3 +112,5 @@
   dir.create('data', showWarning=FALSE)
   #write.csv(final_teams, file.path('data', 'final_teams.csv'))
   write.csv(final_teams_salary, file.path('data', 'final_teams_salary.csv'))
+
+  
